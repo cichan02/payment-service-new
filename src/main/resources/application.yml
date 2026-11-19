@@ -7,7 +7,7 @@ server:
 
 spring:
   application:
-    name: @pom.name@
+    name: payment-service-new
   profiles:
     active: @spring.profiles.active@
     default: release
@@ -16,6 +16,27 @@ spring:
     url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  # Migrations are applied by the pipeline (flyway-maven-plugin), not at startup.
+  flyway:
+    enabled: false
+  cloud:
+    openfeign:
+      client:
+        config:
+          sou-service:
+            connect-timeout: 5000
+            read-timeout: 45000
+
+sou:
+  url: ${SOU_URL:http://sou-service}
 
 management:
   endpoints:

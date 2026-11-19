@@ -1,8 +1,10 @@
-package com.besmart.qrpay;
+package com.besmart.qrpay.paymentservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 
+@EnableFeignClients
 @SpringBootApplication
 public class PaymentServiceNewApp {
     public static void main(String[] args) {

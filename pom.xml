@@ -23,9 +23,11 @@
 
         <!-- Spring -->
         <springdoc-openapi-starter-webmvc-ui.version>2.10.0</springdoc-openapi-starter-webmvc-ui.version>
+        <spring-cloud.version>2025.0.0</spring-cloud.version>
 
         <!-- Tooling -->
         <mapstruct.version>1.6.3</mapstruct.version>
+        <flyway.version>11.7.2</flyway.version>
 
         <!-- Utils -->
 
@@ -52,6 +54,14 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
@@ -84,7 +94,39 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
@@ -123,6 +165,37 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!--
+                Migrations are applied explicitly by the deployment pipeline:
+                ./mvnw flyway:migrate -Dflyway.url=... -Dflyway.user=... -Dflyway.password=...
+                The service owns its own history table, the shared database is also
+                migrated by cash-desk-api and mobile-api.
+            -->
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>${flyway.version}</version>
+                <configuration>
+                    <table>flyway_schema_history_payment_service_new</table>
+                    <schemas>
+                        <schema>public</schema>
+                    </schemas>
+                    <defaultSchema>public</defaultSchema>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-database-postgresql</artifactId>
+                        <version>${flyway.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>postgresql</artifactId>
+                        <version>${postgresql.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>
