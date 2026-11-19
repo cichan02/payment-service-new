@@ -50,7 +50,7 @@ logging:
 ---
 #Release environment
 server:
-  port: 0
+  port: 10280
 
 spring:
   config:
