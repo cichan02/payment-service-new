@@ -1,0 +1,64 @@
+server:
+  servlet:
+    context-path: /api/v1/payment-new
+  tomcat:
+    connection-timeout: 5m
+    max-swallow-size: -1
+
+spring:
+  application:
+    name: @pom.name@
+  profiles:
+    active: @spring.profiles.active@
+    default: release
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+---
+#Dev environment
+spring:
+  config:
+    activate:
+      on-profile: dev
+    import: dev.env[.properties]
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+  api-docs:
+    enabled: true
+    path: /api-docs
+
+logging:
+  file:
+    path: logs
+    name: ${logging.file.path}/${spring.application.name}.log
+
+---
+#Release environment
+server:
+  port: 0
+
+spring:
+  config:
+    activate:
+      on-profile: release
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
