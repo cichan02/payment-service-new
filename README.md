@@ -5,7 +5,7 @@ confirmation and payment history, persists `public.payment` / `public.receipt`,
 and is the only new service that talks to SOU about payments.
 
 The cutover from `cash-desk-api` / `mobile-api` is described in
-[`../docs/payment-service-new-cutover.md`](../docs/payment-service-new-cutover.md).
+[`../docs/services/payment-service-new.md`](../docs/services/payment-service-new.md).
 
 - Base path: `/api/v1/payment-new`
 - Port: `10280`
