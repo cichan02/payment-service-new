@@ -4,7 +4,8 @@ Payment domain service for SmartPay. It owns payment, storno, refund, invoice
 confirmation and payment history, persists `public.payment` / `public.receipt`,
 and is the only new service that talks to SOU about payments.
 
-The cutover from `cash-desk-api` / `mobile-api` is described in
+Service documentation, including the cutover plan from `cash-desk-api` /
+`mobile-api`, is in
 [`../docs/services/payment-service-new.md`](../docs/services/payment-service-new.md).
 
 - Base path: `/api/v1/payment-new`
