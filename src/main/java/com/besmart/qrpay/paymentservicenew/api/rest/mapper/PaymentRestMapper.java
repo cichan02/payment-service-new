@@ -11,15 +11,16 @@ import com.besmart.qrpay.paymentservicenew.api.rest.to.response.PaymentHistoryIt
 import com.besmart.qrpay.paymentservicenew.api.rest.to.response.PaymentHistoryResponse;
 import com.besmart.qrpay.paymentservicenew.api.rest.to.response.PaymentResponse;
 import com.besmart.qrpay.paymentservicenew.api.rest.to.response.ReceiptItemResponse;
-import com.besmart.qrpay.paymentservicenew.core.domain.ConfirmCommand;
-import com.besmart.qrpay.paymentservicenew.core.domain.OperationResult;
-import com.besmart.qrpay.paymentservicenew.core.domain.Payment;
-import com.besmart.qrpay.paymentservicenew.core.domain.PaymentCommand;
-import com.besmart.qrpay.paymentservicenew.core.domain.PaymentHistory;
-import com.besmart.qrpay.paymentservicenew.core.domain.PaymentHistoryQuery;
-import com.besmart.qrpay.paymentservicenew.core.domain.Receipt;
+import com.besmart.qrpay.paymentservicenew.core.domain.command.ConfirmCommand;
+import com.besmart.qrpay.paymentservicenew.core.domain.command.PaymentCommand;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentState;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentType;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Payment;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentHistory;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
+import com.besmart.qrpay.paymentservicenew.core.domain.query.PaymentHistoryQuery;
+import com.besmart.qrpay.paymentservicenew.core.domain.result.OperationResult;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;

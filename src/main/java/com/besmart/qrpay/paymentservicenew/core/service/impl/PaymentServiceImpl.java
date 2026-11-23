@@ -1,14 +1,14 @@
 package com.besmart.qrpay.paymentservicenew.core.service.impl;
 
-import com.besmart.qrpay.paymentservicenew.core.domain.OperationResult;
-import com.besmart.qrpay.paymentservicenew.core.domain.Payment;
-import com.besmart.qrpay.paymentservicenew.core.domain.PaymentCommand;
-import com.besmart.qrpay.paymentservicenew.core.domain.Receipt;
-import com.besmart.qrpay.paymentservicenew.core.domain.SouOutcome;
-import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.ApplicationError;
+import com.besmart.qrpay.paymentservicenew.core.domain.command.PaymentCommand;.ApplicationError;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentState;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentType;
 import com.besmart.qrpay.paymentservicenew.core.domain.exception.SouUnavailableException;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Payment;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentC;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.SouOutcome;
+import com.besmart.qrpay.paymentservicenew.core.domain.result.OperationResult;
 import com.besmart.qrpay.paymentservicenew.core.service.PaymentService;
 import com.besmart.qrpay.paymentservicenew.core.service.StornoService;
 import com.besmart.qrpay.paymentservicenew.core.service.TxRunner;

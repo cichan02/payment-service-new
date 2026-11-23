@@ -1,7 +1,6 @@
 package com.besmart.qrpay.paymentservicenew.core.service;
 
-import com.besmart.qrpay.paymentservicenew.core.domain.OperationResult;
-import com.besmart.qrpay.paymentservicenew.core.domain.PaymentCommand;
+import com.besmart.qrpay.paymentservicenew.core.domain.command.PaymentCommand;nResult;
 
 public interface PaymentService {
 

@@ -1,11 +1,11 @@
 package com.besmart.qrpay.paymentservicenew.infra.network.mapper;
 
-import com.besmart.qrpay.paymentservicenew.core.domain.ConfirmCommand;
-import com.besmart.qrpay.paymentservicenew.core.domain.Payment;
-import com.besmart.qrpay.paymentservicenew.core.domain.PaymentCommand;
-import com.besmart.qrpay.paymentservicenew.core.domain.Receipt;
-import com.besmart.qrpay.paymentservicenew.core.domain.SouOutcome;
+import com.besmart.qrpay.paymentservicenew.core.domain.command.PaymentCommand;firmCommand;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentType;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Payment;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentC;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.SouOutcome;
 import com.besmart.qrpay.paymentservicenew.core.util.TimeZones;
 import com.besmart.qrpay.paymentservicenew.core.util.TrxUtils;
 import com.besmart.qrpay.paymentservicenew.infra.network.to.InvoiceConfirm;

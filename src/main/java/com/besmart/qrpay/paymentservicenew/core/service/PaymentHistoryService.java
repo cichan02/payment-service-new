@@ -1,7 +1,7 @@
 package com.besmart.qrpay.paymentservicenew.core.service;
 
-import com.besmart.qrpay.paymentservicenew.core.domain.PaymentHistory;
-import com.besmart.qrpay.paymentservicenew.core.domain.PaymentHistoryQuery;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentHistory;
+import com.besmart.qrpay.paymentservicenew.core.domain.query.PaymentHistoryQuery;
 
 public interface PaymentHistoryService {
 

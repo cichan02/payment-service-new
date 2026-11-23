@@ -1,10 +1,10 @@
 package com.besmart.qrpay.paymentservicenew.infra.persistence;
 
-import com.besmart.qrpay.paymentservicenew.core.domain.Money;
-import com.besmart.qrpay.paymentservicenew.core.domain.Payment;
-import com.besmart.qrpay.paymentservicenew.core.domain.Receipt;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.ApplicationError;
 import com.besmart.qrpay.paymentservicenew.core.domain.exception.BusinessException;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Money;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Payment;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.ReceiptEntity;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.mapper.PaymentDbMapper;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.repository.ReceiptRepository;

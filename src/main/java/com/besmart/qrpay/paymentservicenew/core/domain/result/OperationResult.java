@@ -1,7 +1,10 @@
-package com.besmart.qrpay.paymentservicenew.core.domain;
+package com.besmart.qrpay.paymentservicenew.core.domain.result;
 
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.ApplicationError;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentState;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Payment;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.SouOutcome;
 
 import java.time.LocalDateTime;
 import java.util.Collection;

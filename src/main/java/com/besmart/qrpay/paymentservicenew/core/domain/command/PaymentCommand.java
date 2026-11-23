@@ -1,7 +1,10 @@
-package com.besmart.qrpay.paymentservicenew.core.domain;
+package com.besmart.qrpay.paymentservicenew.core.domain.command;
 
 import java.time.LocalDate;
 import java.util.Collection;
+
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Money;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
 
 /**
  * Operation context for a sale, refund or storno. Cash-desk-api has already resolved

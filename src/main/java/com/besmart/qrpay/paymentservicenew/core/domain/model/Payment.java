@@ -1,7 +1,8 @@
-package com.besmart.qrpay.paymentservicenew.core.domain;
+package com.besmart.qrpay.paymentservicenew.core.domain.model;
 
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentState;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentType;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

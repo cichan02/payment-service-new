@@ -1,4 +1,4 @@
-package com.besmart.qrpay.paymentservicenew.core.domain;
+package com.besmart.qrpay.paymentservicenew.core.domain.model;
 
 import java.time.LocalDateTime;
 

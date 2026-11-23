@@ -1,4 +1,4 @@
-package com.besmart.qrpay.paymentservicenew.core.domain;
+package com.besmart.qrpay.paymentservicenew.core.domain.command;
 
 /**
  * Mobile side confirmation or cancellation of an invoice.
