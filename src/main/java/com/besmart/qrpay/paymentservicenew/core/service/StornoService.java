@@ -1,11 +1,11 @@
 package com.besmart.qrpay.paymentservicenew.core.service;
 
-import com.besmart.qrpay.paymentservicenew.api.rest.to.request.StornoRequest;
-import com.besmart.qrpay.paymentservicenew.api.rest.to.response.OperationResponse;
+import com.besmart.qrpay.paymentservicenew.core.domain.OperationResult;
+import com.besmart.qrpay.paymentservicenew.core.domain.PaymentCommand;
 
 public interface StornoService {
 
-    OperationResponse storno(StornoRequest request);
+    OperationResult storno(PaymentCommand command);
 
     boolean executePendingAfterPayment(String terminalId, String trxId, Long retailId, String timeZoneId);
 

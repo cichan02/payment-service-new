@@ -1,5 +1,6 @@
 package com.besmart.qrpay.paymentservicenew.api.rest.controller;
 
+import com.besmart.qrpay.paymentservicenew.api.rest.mapper.PaymentRestMapper;
 import com.besmart.qrpay.paymentservicenew.api.rest.to.request.ConfirmRequest;
 import com.besmart.qrpay.paymentservicenew.api.rest.to.request.PaymentHistoryRequest;
 import com.besmart.qrpay.paymentservicenew.api.rest.to.response.OperationResponse;
@@ -25,11 +26,12 @@ public class MobilePaymentController {
 
     private final ConfirmService confirmService;
     private final PaymentHistoryService paymentHistoryService;
+    private final PaymentRestMapper mapper;
 
     @PostMapping(path = "/confirm", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<OperationResponse> confirm(@Valid @RequestBody ConfirmRequest request) {
-        OperationResponse response = confirmService.confirm(request);
+        OperationResponse response = mapper.toResponse(confirmService.confirm(mapper.toDomain(request)));
         return ResponseEntity
                 .status(response.errorCode() == 0 ? HttpStatus.OK : HttpStatus.BAD_REQUEST)
                 .body(response);
@@ -38,6 +40,6 @@ public class MobilePaymentController {
     @PostMapping(path = "/payment-history", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public PaymentHistoryResponse history(@Valid @RequestBody PaymentHistoryRequest request) {
-        return paymentHistoryService.history(request);
+        return mapper.toResponse(paymentHistoryService.history(mapper.toDomain(request)));
     }
 }

@@ -12,13 +12,13 @@ import java.math.BigDecimal;
  * four values cannot drift apart.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record MoneyDto(
+public record Money(
         @NotNull @DecimalMin("0.00") BigDecimal amount,
         @DecimalMin("0.00") BigDecimal discount,
         @NotNull Integer currency,
         String currencyAbbr
 ) {
-    public MoneyDto {
+    public Money {
         if (discount == null) {
             discount = BigDecimal.ZERO;
         }

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record PaymentHistoryItem(
-        PaymentDto payment,
-        List<ReceiptItemDto> receipts
+        PaymentResponse payment,
+        List<ReceiptItemResponse> receipts
 ) {
 }

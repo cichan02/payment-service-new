@@ -14,7 +14,7 @@ public record OperationResponse(
         Long operationId,
         String slip,
         List<String> receiptSlip,
-        PaymentDto payment,
-        List<ReceiptItemDto> receipts
+        PaymentResponse payment,
+        List<ReceiptItemResponse> receipts
 ) {
 }

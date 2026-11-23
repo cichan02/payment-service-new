@@ -1,9 +1,9 @@
 package com.besmart.qrpay.paymentservicenew.core.service;
 
-import com.besmart.qrpay.paymentservicenew.api.rest.to.request.PaymentRequest;
-import com.besmart.qrpay.paymentservicenew.api.rest.to.response.OperationResponse;
+import com.besmart.qrpay.paymentservicenew.core.domain.OperationResult;
+import com.besmart.qrpay.paymentservicenew.core.domain.PaymentCommand;
 
 public interface PaymentService {
 
-    OperationResponse pay(PaymentRequest request);
+    OperationResult pay(PaymentCommand command);
 }

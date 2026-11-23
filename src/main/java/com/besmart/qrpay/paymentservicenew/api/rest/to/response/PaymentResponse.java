@@ -1,17 +1,17 @@
 package com.besmart.qrpay.paymentservicenew.api.rest.to.response;
 
-import com.besmart.qrpay.paymentservicenew.api.rest.to.common.MoneyDto;
+import com.besmart.qrpay.paymentservicenew.api.rest.to.common.Money;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.LocalDateTime;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record PaymentDto(
+public record PaymentResponse(
         Long id,
         String cashDeskUid,
         String trnId,
         LocalDateTime paymentDate,
-        MoneyDto money,
+        Money money,
         boolean success,
         Long souId,
         String paymentType,
