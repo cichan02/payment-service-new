@@ -1,13 +1,20 @@
 package com.besmart.qrpay.paymentservicenew.core.service.impl;
 
-import com.besmart.qrpay.paymentservicenew.core.domain.command.PaymentCommand;.ApplicationError;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
+import com.besmart.qrpay.paymentservicenew.core.domain.command.PaymentCommand;
+import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.ApplicationError;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentState;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentType;
 import com.besmart.qrpay.paymentservicenew.core.domain.exception.SouUnavailableException;
 import com.besmart.qrpay.paymentservicenew.core.domain.model.Payment;
-import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentC;
 import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
-import com.besmart.qrpay.paymentservicenew.core.domain.model.SouOutcome;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Sou;
 import com.besmart.qrpay.paymentservicenew.core.domain.result.OperationResult;
 import com.besmart.qrpay.paymentservicenew.core.service.StornoService;
 import com.besmart.qrpay.paymentservicenew.core.service.TxRunner;
@@ -20,15 +27,10 @@ import com.besmart.qrpay.paymentservicenew.infra.persistence.PaymentStore;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.PaymentEntity;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.mapper.PaymentDbMapper;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.repository.PaymentRepository;
+
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -172,7 +174,7 @@ public class StornoServiceImpl implements StornoService {
                 return OperationResult.stored(storno, receipts, now);
             }
 
-            SouOutcome sou = doExecute(storno, command);
+            Sou sou = doExecute(storno, command);
             if (sou == null) {
                 return OperationResult.error(ApplicationError.SALE_TRANSACTION_NOT_FOUND, now);
             }
@@ -184,7 +186,7 @@ public class StornoServiceImpl implements StornoService {
      * Runs with the storno row already locked in the current transaction. Returns the
      * SOU outcome, or {@code null} when the sale has not succeeded yet.
      */
-    private SouOutcome doExecute(Payment storno, PaymentCommand command) {
+    private Sou doExecute(Payment storno, PaymentCommand command) {
         Optional<Payment> saleOpt = payments.findByCashDeskUidAndTrnIdAndPaymentType(
                         storno.getCashDeskUid(), TrxUtils.clearTrx(storno.getTrnId()), PaymentType.SALE)
                 .map(dbMapper::toDomain);
@@ -199,7 +201,7 @@ public class StornoServiceImpl implements StornoService {
         storno.applyMoney(sale.money());
         storno.setQrPayClientId(sale.getQrPayClientId());
 
-        SouOutcome sou;
+        Sou sou;
         try {
             SouPaymentResponse response = souClient.storno(netMapper.toNet(storno, command));
             sou = netMapper.toDomain(response);
@@ -228,7 +230,7 @@ public class StornoServiceImpl implements StornoService {
         }
     }
 
-    private LocalDateTime paymentDate(SouOutcome sou, PaymentCommand command) {
+    private LocalDateTime paymentDate(Sou sou, PaymentCommand command) {
         LocalDateTime souTime = sou.operationTime();
         return souTime == null ? null : TimeZones.toUtc(souTime, command.timeZoneId());
     }

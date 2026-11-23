@@ -1,11 +1,11 @@
 package com.besmart.qrpay.paymentservicenew.infra.network.mapper;
 
-import com.besmart.qrpay.paymentservicenew.core.domain.command.PaymentCommand;firmCommand;
+import com.besmart.qrpay.paymentservicenew.core.domain.command.ConfirmCommand;
+import com.besmart.qrpay.paymentservicenew.core.domain.command.PaymentCommand;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentType;
 import com.besmart.qrpay.paymentservicenew.core.domain.model.Payment;
-import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentC;
 import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
-import com.besmart.qrpay.paymentservicenew.core.domain.model.SouOutcome;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Sou;
 import com.besmart.qrpay.paymentservicenew.core.util.TimeZones;
 import com.besmart.qrpay.paymentservicenew.core.util.TrxUtils;
 import com.besmart.qrpay.paymentservicenew.infra.network.to.InvoiceConfirm;
@@ -98,8 +98,8 @@ public abstract class PaymentNetMapper {
         return confirm;
     }
 
-    public SouOutcome toDomain(SouPaymentResponse response) {
-        return new SouOutcome(
+    public Sou toDomain(SouPaymentResponse response) {
+        return new Sou(
                 response.isSuccess(),
                 response.getErrorCode(),
                 response.getErrorMessage(),
@@ -109,8 +109,8 @@ public abstract class PaymentNetMapper {
         );
     }
 
-    public SouOutcome toDomain(InvoiceConfirmResponse response) {
-        return new SouOutcome(
+    public Sou toDomain(InvoiceConfirmResponse response) {
+        return new Sou(
                 response.isSuccess(),
                 response.getErrorCode() == null ? 0 : response.getErrorCode(),
                 response.getErrorMessage(),

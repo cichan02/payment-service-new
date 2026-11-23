@@ -1,21 +1,5 @@
 package com.besmart.qrpay.paymentservicenew.core.service.impl;
 
-import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.ApplicationError;
-import com.besmart.qrpay.paymentservicenew.core.domain.exception.BusinessException;
-import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentHistory;
-import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentHistoryQuery;
-import com.besmart.qrpay.paymentservicenew.core.service.PaymentHistoryService;
-import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.PaymentEntity;
-import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.ReceiptEntity;
-import com.besmart.qrpay.paymentservicenew.infra.persistence.mapper.PaymentDbMapper;
-import com.besmart.qrpay.paymentservicenew.infra.persistence.repository.PaymentRepository;
-import com.besmart.qrpay.paymentservicenew.infra.persistence.repository.ReceiptRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -23,6 +7,24 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
+import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.ApplicationError;
+import com.besmart.qrpay.paymentservicenew.core.domain.exception.BusinessException;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentHistory;
+import com.besmart.qrpay.paymentservicenew.core.domain.query.PaymentHistoryQuery;
+import com.besmart.qrpay.paymentservicenew.core.service.PaymentHistoryService;
+import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.PaymentEntity;
+import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.ReceiptEntity;
+import com.besmart.qrpay.paymentservicenew.infra.persistence.mapper.PaymentDbMapper;
+import com.besmart.qrpay.paymentservicenew.infra.persistence.repository.PaymentRepository;
+import com.besmart.qrpay.paymentservicenew.infra.persistence.repository.ReceiptRepository;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Payment history for mobile-api. Returns the persisted Payment + Receipt rows; no

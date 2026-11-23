@@ -1,12 +1,19 @@
 package com.besmart.qrpay.paymentservicenew.core.service.impl;
 
-import com.besmart.qrpay.paymentservicenew.core.domain.OperationResult
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.besmart.qrpay.paymentservicenew.core.domain.command.ConfirmCommand;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentState;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentType;
 import com.besmart.qrpay.paymentservicenew.core.domain.exception.SouUnavailableException;
 import com.besmart.qrpay.paymentservicenew.core.domain.model.Payment;
 import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
-import com.besmart.qrpay.paymentservicenew.core.domain.model.SouOutcome;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Sou;
 import com.besmart.qrpay.paymentservicenew.core.domain.result.OperationResult;
 import com.besmart.qrpay.paymentservicenew.core.service.ConfirmService;
 import com.besmart.qrpay.paymentservicenew.core.service.TxRunner;
@@ -14,18 +21,12 @@ import com.besmart.qrpay.paymentservicenew.infra.network.client.SouClient;
 import com.besmart.qrpay.paymentservicenew.infra.network.mapper.PaymentNetMapper;
 import com.besmart.qrpay.paymentservicenew.infra.network.to.InvoiceConfirmResponse;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.PaymentStore;
-import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.PaymentEntity;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.mapper.PaymentDbMapper;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.repository.PaymentRepository;
+
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * Mobile side invoice confirmation/cancellation. Signature and device session checks
@@ -78,7 +79,7 @@ public class ConfirmServiceImpl implements ConfirmService {
                 }
             }
 
-            SouOutcome sou;
+            Sou sou;
             try {
                 InvoiceConfirmResponse response = souClient.invoiceConfirm(netMapper.toNet(command));
                 sou = netMapper.toDomain(response);

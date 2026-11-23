@@ -1,13 +1,20 @@
 package com.besmart.qrpay.paymentservicenew.core.service.impl;
 
-import com.besmart.qrpay.paymentservicenew.core.domain.command.PaymentCommand;.ApplicationError;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
+import com.besmart.qrpay.paymentservicenew.core.domain.command.PaymentCommand;
+import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.ApplicationError;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentState;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentType;
 import com.besmart.qrpay.paymentservicenew.core.domain.exception.SouUnavailableException;
 import com.besmart.qrpay.paymentservicenew.core.domain.model.Payment;
-import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentC;
 import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
-import com.besmart.qrpay.paymentservicenew.core.domain.model.SouOutcome;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Sou;
 import com.besmart.qrpay.paymentservicenew.core.domain.result.OperationResult;
 import com.besmart.qrpay.paymentservicenew.core.service.PaymentService;
 import com.besmart.qrpay.paymentservicenew.core.service.StornoService;
@@ -20,15 +27,10 @@ import com.besmart.qrpay.paymentservicenew.infra.persistence.PaymentStore;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.PaymentEntity;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.mapper.PaymentDbMapper;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.repository.PaymentRepository;
+
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -131,7 +133,7 @@ public class PaymentServiceImpl implements PaymentService {
             }
             Collection<Receipt> receipts = store.receipts(id);
 
-            SouOutcome sou;
+            Sou sou;
             try {
                 SouPaymentResponse response = souClient.payment(
                         netMapper.toNet(payment, command, receipts, PaymentType.SALE));
@@ -150,11 +152,11 @@ public class PaymentServiceImpl implements PaymentService {
         });
     }
 
-    private LocalDateTime paymentDate(SouOutcome sou, PaymentCommand command) {
+    private LocalDateTime paymentDate(Sou sou, PaymentCommand command) {
         LocalDateTime souTime = sou.operationTime();
         return souTime == null ? null : TimeZones.toUtc(souTime, command.timeZoneId());
     }
 
-    private record Execution(Payment payment, SouOutcome sou) {
+    private record Execution(Payment payment, Sou sou) {
     }
 }
