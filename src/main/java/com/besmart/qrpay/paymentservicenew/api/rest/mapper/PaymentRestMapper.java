@@ -7,7 +7,6 @@ import com.besmart.qrpay.paymentservicenew.api.rest.to.request.ReceiptItemReques
 import com.besmart.qrpay.paymentservicenew.api.rest.to.request.RefundRequest;
 import com.besmart.qrpay.paymentservicenew.api.rest.to.request.StornoRequest;
 import com.besmart.qrpay.paymentservicenew.api.rest.to.response.OperationResponse;
-import com.besmart.qrpay.paymentservicenew.api.rest.to.response.PaymentHistoryItem;
 import com.besmart.qrpay.paymentservicenew.api.rest.to.response.PaymentHistoryResponse;
 import com.besmart.qrpay.paymentservicenew.api.rest.to.response.PaymentResponse;
 import com.besmart.qrpay.paymentservicenew.api.rest.to.response.ReceiptItemResponse;
@@ -100,8 +99,8 @@ public abstract class PaymentRestMapper {
     }
 
     public PaymentHistoryResponse toResponse(PaymentHistory history) {
-        List<PaymentHistoryItem> payments = history.entries().stream()
-                .map(entry -> new PaymentHistoryItem(
+        List<PaymentHistoryResponse.PaymentHistoryItem> payments = history.items().stream()
+                .map(entry -> new PaymentHistoryResponse.PaymentHistoryItem(
                         toResponse(entry.payment()),
                         List.copyOf(toResponses(entry.receipts()))))
                 .toList();

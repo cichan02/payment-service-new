@@ -4,7 +4,7 @@ import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.ApplicationEr
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentState;
 import com.besmart.qrpay.paymentservicenew.core.domain.model.Payment;
 import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
-import com.besmart.qrpay.paymentservicenew.core.domain.model.SouOutcome;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Sou;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -52,7 +52,7 @@ public record OperationResult(
     }
 
     public static OperationResult of(Payment payment, Collection<Receipt> receipts,
-                                     SouOutcome sou, LocalDateTime operationTime) {
+                                     Sou sou, LocalDateTime operationTime) {
         return new OperationResult(
                 sou.errorCode(),
                 sou.errorMessage() == null ? "" : sou.errorMessage(),

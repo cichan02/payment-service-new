@@ -3,7 +3,6 @@ package com.besmart.qrpay.paymentservicenew.core.service.impl;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.ApplicationError;
 import com.besmart.qrpay.paymentservicenew.core.domain.exception.BusinessException;
 import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentHistory;
-import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentHistoryItem;
 import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentHistoryQuery;
 import com.besmart.qrpay.paymentservicenew.core.service.PaymentHistoryService;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.PaymentEntity;
@@ -73,8 +72,8 @@ public class PaymentHistoryServiceImpl implements PaymentHistoryService {
         Map<Long, List<ReceiptEntity>> byPayment = receipts.findByPaymentIdInOrderByIdAsc(ids).stream()
                 .collect(Collectors.groupingBy(ReceiptEntity::getPaymentId));
 
-        List<PaymentHistoryItem> entries = found.stream()
-                .map(payment -> new PaymentHistoryItem(
+        List<PaymentHistory.Item> entries = found.stream()
+                .map(payment -> new PaymentHistory.Item(
                         dbMapper.toDomain(payment),
                         dbMapper.toDomains(byPayment.getOrDefault(payment.getId(), List.of()))))
                 .toList();

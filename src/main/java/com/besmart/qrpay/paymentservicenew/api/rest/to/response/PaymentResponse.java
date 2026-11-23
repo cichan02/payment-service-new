@@ -1,11 +1,9 @@
 package com.besmart.qrpay.paymentservicenew.api.rest.to.response;
 
 import com.besmart.qrpay.paymentservicenew.api.rest.to.common.Money;
-import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.LocalDateTime;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record PaymentResponse(
         Long id,
         String cashDeskUid,

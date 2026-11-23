@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
  * What SOU answered, in domain terms. The network layer is the only place that knows
  * about {@code SouPaymentResponse}/{@code InvoiceConfirmResponse}.
  */
-public record SouOutcome(
+public record Sou(
         boolean success,
         int errorCode,
         String errorMessage,

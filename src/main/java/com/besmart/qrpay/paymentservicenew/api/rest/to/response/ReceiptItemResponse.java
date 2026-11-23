@@ -1,11 +1,9 @@
 package com.besmart.qrpay.paymentservicenew.api.rest.to.response;
 
 import com.besmart.qrpay.paymentservicenew.api.rest.to.common.Money;
-import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.math.BigDecimal;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record ReceiptItemResponse(
         Long id,
         Long paymentId,
