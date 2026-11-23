@@ -1,9 +1,9 @@
 package com.besmart.qrpay.paymentservicenew.core.service;
 
-import com.besmart.qrpay.paymentservicenew.api.rest.to.request.PaymentHistoryRequest;
-import com.besmart.qrpay.paymentservicenew.api.rest.to.response.PaymentHistoryResponse;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.PaymentHistory;
+import com.besmart.qrpay.paymentservicenew.core.domain.query.PaymentHistoryQuery;
 
 public interface PaymentHistoryService {
 
-    PaymentHistoryResponse history(PaymentHistoryRequest request);
+    PaymentHistory history(PaymentHistoryQuery query);
 }

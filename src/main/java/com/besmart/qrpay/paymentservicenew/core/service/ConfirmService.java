@@ -1,9 +1,9 @@
 package com.besmart.qrpay.paymentservicenew.core.service;
 
-import com.besmart.qrpay.paymentservicenew.api.rest.to.request.ConfirmRequest;
-import com.besmart.qrpay.paymentservicenew.api.rest.to.response.OperationResponse;
+import com.besmart.qrpay.paymentservicenew.core.domain.command.ConfirmCommand;
+import com.besmart.qrpay.paymentservicenew.core.domain.result.OperationResult;
 
 public interface ConfirmService {
 
-    OperationResponse confirm(ConfirmRequest request);
+    OperationResult confirm(ConfirmCommand command);
 }

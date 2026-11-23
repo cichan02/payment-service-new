@@ -1,12 +1,10 @@
 package com.besmart.qrpay.paymentservicenew.api.rest.to.response;
 
-import com.besmart.qrpay.paymentservicenew.api.rest.to.common.MoneyDto;
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.besmart.qrpay.paymentservicenew.api.rest.to.common.Money;
 
 import java.math.BigDecimal;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public record ReceiptItemDto(
+public record ReceiptItemResponse(
         Long id,
         Long paymentId,
         String name,
@@ -14,6 +12,6 @@ public record ReceiptItemDto(
         BigDecimal quantity,
         String unitName,
         String barCode,
-        MoneyDto money
+        Money money
 ) {
 }

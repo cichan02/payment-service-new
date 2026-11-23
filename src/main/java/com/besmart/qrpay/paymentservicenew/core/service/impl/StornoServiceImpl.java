@@ -1,33 +1,36 @@
 package com.besmart.qrpay.paymentservicenew.core.service.impl;
 
-import com.besmart.qrpay.paymentservicenew.api.rest.mapper.ResponseFactory;
-import com.besmart.qrpay.paymentservicenew.api.rest.to.common.MoneyDto;
-import com.besmart.qrpay.paymentservicenew.api.rest.to.request.StornoRequest;
-import com.besmart.qrpay.paymentservicenew.api.rest.to.response.OperationResponse;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
+import com.besmart.qrpay.paymentservicenew.core.domain.command.PaymentCommand;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.ApplicationError;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentState;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentType;
 import com.besmart.qrpay.paymentservicenew.core.domain.exception.SouUnavailableException;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Payment;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Sou;
+import com.besmart.qrpay.paymentservicenew.core.domain.result.OperationResult;
 import com.besmart.qrpay.paymentservicenew.core.service.StornoService;
 import com.besmart.qrpay.paymentservicenew.core.service.TxRunner;
 import com.besmart.qrpay.paymentservicenew.core.util.TimeZones;
 import com.besmart.qrpay.paymentservicenew.core.util.TrxUtils;
 import com.besmart.qrpay.paymentservicenew.infra.network.client.SouClient;
-import com.besmart.qrpay.paymentservicenew.infra.network.mapper.SouRequestFactory;
+import com.besmart.qrpay.paymentservicenew.infra.network.mapper.PaymentNetMapper;
 import com.besmart.qrpay.paymentservicenew.infra.network.to.SouPaymentResponse;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.PaymentStore;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.PaymentEntity;
-import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.ReceiptEntity;
+import com.besmart.qrpay.paymentservicenew.infra.persistence.mapper.PaymentDbMapper;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.repository.PaymentRepository;
+
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -37,9 +40,9 @@ public class StornoServiceImpl implements StornoService {
     private final TxRunner tx;
     private final PaymentRepository payments;
     private final PaymentStore store;
+    private final PaymentDbMapper dbMapper;
     private final SouClient souClient;
-    private final SouRequestFactory souFactory;
-    private final ResponseFactory responseFactory;
+    private final PaymentNetMapper netMapper;
     private final Clock clock;
 
     /**
@@ -48,18 +51,17 @@ public class StornoServiceImpl implements StornoService {
      * arrives. This replaces the five minute Redis cache used by cash-desk-api.
      */
     @Override
-    public OperationResponse storno(StornoRequest request) {
+    public OperationResult storno(PaymentCommand command) {
         LocalDateTime now = LocalDateTime.now(clock);
-        PaymentEntity storno = createOrGet(request);
+        Payment storno = createOrGet(command);
 
         if (storno.getState() == PaymentState.STORNO_PENDING) {
-            return responseFactory.error(ApplicationError.SALE_TRANSACTION_NOT_FOUND,
-                    ApplicationError.SALE_TRANSACTION_NOT_FOUND.getMessage(), now);
+            return OperationResult.error(ApplicationError.SALE_TRANSACTION_NOT_FOUND, now);
         }
-        if (isFinal(storno)) {
-            return responseFactory.stored(storno, store.receipts(storno.getId()), now);
+        if (storno.isFinal()) {
+            return OperationResult.stored(storno, store.receipts(storno.getId()), now);
         }
-        return execute(storno.getId(), request, now);
+        return execute(storno.getId(), command, now);
     }
 
     /**
@@ -75,31 +77,39 @@ public class StornoServiceImpl implements StornoService {
                 if (found.isEmpty()) {
                     return false;
                 }
-                PaymentEntity storno = found.get();
-                if (isCompleted(storno)) {
+                Payment pending = dbMapper.toDomain(found.get());
+                if (isCompleted(pending)) {
                     return true;
                 }
-                if (storno.getState() == PaymentState.LEGACY) {
+                if (pending.getState() == PaymentState.LEGACY) {
                     // Never retry a row produced by the old services: it may already
                     // have been accepted by SOU.
                     return false;
                 }
-                PaymentEntity locked = payments.findByIdForUpdate(storno.getId()).orElseThrow();
-                StornoRequest synthetic = new StornoRequest(
+                Payment locked = payments.findByIdForUpdate(pending.getId())
+                        .map(dbMapper::toDomain)
+                        .orElseThrow();
+                PaymentCommand synthetic = new PaymentCommand(
                         terminalId,
                         retailId == null ? 0L : retailId,
                         trxId,
                         locked.getShiftNumber() == null ? 0 : locked.getShiftNumber(),
                         null,
                         locked.getReceiptNumber() == null ? null : Integer.valueOf(locked.getReceiptNumber()),
-                        new MoneyDto(locked.getAmount(), locked.getDiscount(),
-                                locked.getCurrency(), locked.getCurrencyAbbr()),
+                        locked.money(),
                         locked.getQrPayClientId(),
+                        null,
+                        null,
+                        null,
                         null,
                         null,
                         null,
                         timeZoneId,
                         locked.getTerminalIp(),
+                        null,
+                        null,
+                        null,
+                        null,
                         null
                 );
                 return doExecute(locked, synthetic) != null;
@@ -115,131 +125,117 @@ public class StornoServiceImpl implements StornoService {
     public boolean isCompleted(String terminalId, String trxId) {
         return payments.findByCashDeskUidAndTrnIdAndPaymentType(
                         terminalId, TrxUtils.withSuffix(trxId, "-S"), PaymentType.STORNO)
+                .map(dbMapper::toDomain)
                 .map(this::isCompleted)
                 .orElse(false);
     }
 
-    private PaymentEntity createOrGet(StornoRequest request) {
+    private Payment createOrGet(PaymentCommand command) {
         return tx.inTx(() -> {
-            payments.acquireTransactionLock(store.lockKey(request.terminalId(), request.trxId()));
-            String stornoTrx = TrxUtils.withSuffix(request.trxId(), "-S");
+            payments.acquireTransactionLock(store.lockKey(command.terminalId(), command.trxId()));
+            String stornoTrx = TrxUtils.withSuffix(command.trxId(), "-S");
             Optional<PaymentEntity> existing = payments.findByCashDeskUidAndTrnIdAndPaymentType(
-                    request.terminalId(), stornoTrx, PaymentType.STORNO);
+                    command.terminalId(), stornoTrx, PaymentType.STORNO);
             if (existing.isPresent()) {
-                return existing.get();
+                return dbMapper.toDomain(existing.get());
             }
 
-            Optional<PaymentEntity> sale = payments.findByCashDeskUidAndTrnIdAndPaymentType(
-                    request.terminalId(), request.trxId(), PaymentType.SALE);
-            PaymentEntity storno = new PaymentEntity();
-            storno.setCashDeskUid(request.terminalId());
+            Optional<Payment> sale = payments.findByCashDeskUidAndTrnIdAndPaymentType(
+                            command.terminalId(), command.trxId(), PaymentType.SALE)
+                    .map(dbMapper::toDomain);
+            Payment storno = new Payment();
+            storno.setCashDeskUid(command.terminalId());
             storno.setTrnId(stornoTrx);
             storno.setPaymentDate(TimeZones.toUtc(
-                    TimeZones.nowInZone(clock, request.timeZoneId()), request.timeZoneId()));
+                    TimeZones.nowInZone(clock, command.timeZoneId()), command.timeZoneId()));
             storno.setPaymentType(PaymentType.STORNO);
             storno.setSuccess(false);
-            storno.setShiftNumber(request.shiftNo());
-            storno.setReceiptNumber(request.receiptNumber() == null ? null : String.valueOf(request.receiptNumber()));
-            storno.setTerminalIp(request.terminalIp());
+            storno.setShiftNumber(command.shiftNo());
+            storno.setReceiptNumber(command.receiptNumber() == null
+                    ? null : String.valueOf(command.receiptNumber()));
+            storno.setTerminalIp(command.terminalIp());
             storno.setState(sale.isPresent() ? PaymentState.CREATED : PaymentState.STORNO_PENDING);
-            applySaleOrRequest(storno, sale.orElse(null), request);
+            applySaleOrCommand(storno, sale.orElse(null), command);
 
-            payments.save(storno);
-            store.saveReceipts(storno.getId(), request.receipts(),
-                    new MoneyDto(storno.getAmount(), storno.getDiscount(), storno.getCurrency(),
-                            storno.getCurrencyAbbr()), request.trxId());
-            return storno;
+            PaymentEntity saved = payments.save(dbMapper.toEntity(storno));
+            store.saveReceipts(saved.getId(), command.receipts(), storno.money(), command.trxId());
+            return dbMapper.toDomain(saved);
         });
     }
 
-    private OperationResponse execute(Long id, StornoRequest request, LocalDateTime now) {
+    private OperationResult execute(Long id, PaymentCommand command, LocalDateTime now) {
         return tx.inTx(() -> {
-            PaymentEntity storno = payments.findByIdForUpdate(id).orElseThrow();
-            List<ReceiptEntity> receipts = store.receipts(id);
+            Payment storno = payments.findByIdForUpdate(id)
+                    .map(dbMapper::toDomain)
+                    .orElseThrow();
+            Collection<Receipt> receipts = store.receipts(id);
 
-            if (isFinal(storno)) {
-                return responseFactory.stored(storno, receipts, now);
+            if (storno.isFinal()) {
+                return OperationResult.stored(storno, receipts, now);
             }
 
-            SouPaymentResponse response = doExecute(storno, request);
-            if (response == null) {
-                return responseFactory.error(ApplicationError.SALE_TRANSACTION_NOT_FOUND,
-                        ApplicationError.SALE_TRANSACTION_NOT_FOUND.getMessage(), now);
+            Sou sou = doExecute(storno, command);
+            if (sou == null) {
+                return OperationResult.error(ApplicationError.SALE_TRANSACTION_NOT_FOUND, now);
             }
-            return responseFactory.of(storno, receipts, response, now);
+            return OperationResult.of(storno, receipts, sou, now);
         });
     }
 
     /**
      * Runs with the storno row already locked in the current transaction. Returns the
-     * SOU response, or {@code null} when the sale has not succeeded yet.
+     * SOU outcome, or {@code null} when the sale has not succeeded yet.
      */
-    private SouPaymentResponse doExecute(PaymentEntity storno, StornoRequest request) {
-        Optional<PaymentEntity> saleOpt = payments.findByCashDeskUidAndTrnIdAndPaymentType(
-                storno.getCashDeskUid(), TrxUtils.clearTrx(storno.getTrnId()), PaymentType.SALE);
+    private Sou doExecute(Payment storno, PaymentCommand command) {
+        Optional<Payment> saleOpt = payments.findByCashDeskUidAndTrnIdAndPaymentType(
+                        storno.getCashDeskUid(), TrxUtils.clearTrx(storno.getTrnId()), PaymentType.SALE)
+                .map(dbMapper::toDomain);
         if (saleOpt.isEmpty() || !saleOpt.get().isSuccess()) {
             storno.setState(PaymentState.STORNO_PENDING);
-            payments.save(storno);
+            payments.save(dbMapper.toEntity(storno));
             return null;
         }
 
-        PaymentEntity sale = saleOpt.get();
+        Payment sale = saleOpt.get();
         // Existing cash-desk behaviour: the storno amount always follows the sale.
-        storno.setAmount(sale.getAmount());
-        storno.setDiscount(sale.getDiscount());
-        storno.setCurrency(sale.getCurrency());
-        storno.setCurrencyAbbr(sale.getCurrencyAbbr());
+        storno.applyMoney(sale.money());
         storno.setQrPayClientId(sale.getQrPayClientId());
 
-        SouPaymentResponse response;
+        Sou sou;
         try {
-            response = souClient.storno(souFactory.stornoRequest(storno, request));
+            SouPaymentResponse response = souClient.storno(netMapper.toNet(storno, command));
+            sou = netMapper.toDomain(response);
         } catch (FeignException ex) {
             throw new SouUnavailableException("SOU storno call failed for trx " + storno.getTrnId(), ex);
         }
 
-        if (response.isSuccess()) {
-            storno.setState(PaymentState.COMPLETED);
-            storno.setSuccess(true);
-            storno.setSouId(response.getSouTransaction() == null ? 0L : response.getSouTransaction());
-            LocalDateTime souTime = response.operationTimeAsLocalDateTime();
-            if (souTime != null) {
-                storno.setPaymentDate(TimeZones.toUtc(souTime, request.timeZoneId()));
-            }
+        if (sou.success()) {
+            storno.complete(sou.souTransactionId(), paymentDate(sou, command));
             sale.setStorno(true);
-            payments.save(sale);
+            payments.save(dbMapper.toEntity(sale));
         } else {
-            storno.setState(PaymentState.DECLINED);
-            storno.setSuccess(false);
-            storno.setErrorText(response.getErrorMessage());
+            storno.decline(sou.errorMessage());
         }
-        payments.save(storno);
-        return response;
+        payments.save(dbMapper.toEntity(storno));
+        return sou;
     }
 
-    private void applySaleOrRequest(PaymentEntity storno, PaymentEntity sale, StornoRequest request) {
+    private void applySaleOrCommand(Payment storno, Payment sale, PaymentCommand command) {
         if (sale != null) {
-            storno.setAmount(sale.getAmount());
-            storno.setDiscount(sale.getDiscount());
-            storno.setCurrency(sale.getCurrency());
-            storno.setCurrencyAbbr(sale.getCurrencyAbbr());
+            storno.applyMoney(sale.money());
             storno.setQrPayClientId(sale.getQrPayClientId());
         } else {
-            storno.setAmount(request.money().amount());
-            storno.setDiscount(request.money().discount());
-            storno.setCurrency(request.money().currency());
-            storno.setCurrencyAbbr(request.money().currencyAbbr());
-            storno.setQrPayClientId(request.qrPayClientId());
+            storno.applyMoney(command.money());
+            storno.setQrPayClientId(command.qrPayClientId());
         }
     }
 
-    private boolean isFinal(PaymentEntity storno) {
-        // LEGACY rows belong to the old services and must never be retried: a second
-        // storno could move money again. Only CREATED/STORNO_PENDING are retryable.
-        return storno.getState().isSettled();
+    private LocalDateTime paymentDate(Sou sou, PaymentCommand command) {
+        LocalDateTime souTime = sou.operationTime();
+        return souTime == null ? null : TimeZones.toUtc(souTime, command.timeZoneId());
     }
 
-    private boolean isCompleted(PaymentEntity storno) {
+    private boolean isCompleted(Payment storno) {
         return storno.getState() == PaymentState.COMPLETED
                 || (storno.getState() == PaymentState.LEGACY && storno.isSuccess());
     }

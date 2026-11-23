@@ -1,6 +1,6 @@
 package com.besmart.qrpay.paymentservicenew.api.rest.to.request;
 
-import com.besmart.qrpay.paymentservicenew.api.rest.to.common.MoneyDto;
+import com.besmart.qrpay.paymentservicenew.api.rest.to.common.Money;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 public record ReceiptItemRequest(
         @NotBlank String name,
         @DecimalMin("0.00") BigDecimal price,
-        @NotNull @Valid MoneyDto money,
+        @NotNull @Valid Money money,
         @Positive BigDecimal quantity,
         String unitName,
         String barCode

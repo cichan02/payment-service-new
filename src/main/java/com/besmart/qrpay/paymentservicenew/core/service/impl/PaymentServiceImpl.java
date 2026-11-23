@@ -1,32 +1,36 @@
 package com.besmart.qrpay.paymentservicenew.core.service.impl;
 
-import com.besmart.qrpay.paymentservicenew.api.rest.mapper.ResponseFactory;
-import com.besmart.qrpay.paymentservicenew.api.rest.to.request.PaymentRequest;
-import com.besmart.qrpay.paymentservicenew.api.rest.to.response.OperationResponse;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
+import com.besmart.qrpay.paymentservicenew.core.domain.command.PaymentCommand;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.ApplicationError;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentState;
 import com.besmart.qrpay.paymentservicenew.core.domain.enumeration.PaymentType;
 import com.besmart.qrpay.paymentservicenew.core.domain.exception.SouUnavailableException;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Payment;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
+import com.besmart.qrpay.paymentservicenew.core.domain.model.Sou;
+import com.besmart.qrpay.paymentservicenew.core.domain.result.OperationResult;
 import com.besmart.qrpay.paymentservicenew.core.service.PaymentService;
 import com.besmart.qrpay.paymentservicenew.core.service.StornoService;
 import com.besmart.qrpay.paymentservicenew.core.service.TxRunner;
 import com.besmart.qrpay.paymentservicenew.core.util.TimeZones;
 import com.besmart.qrpay.paymentservicenew.infra.network.client.SouClient;
-import com.besmart.qrpay.paymentservicenew.infra.network.mapper.SouRequestFactory;
+import com.besmart.qrpay.paymentservicenew.infra.network.mapper.PaymentNetMapper;
 import com.besmart.qrpay.paymentservicenew.infra.network.to.SouPaymentResponse;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.PaymentStore;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.PaymentEntity;
-import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.ReceiptEntity;
+import com.besmart.qrpay.paymentservicenew.infra.persistence.mapper.PaymentDbMapper;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.repository.PaymentRepository;
+
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -36,10 +40,10 @@ public class PaymentServiceImpl implements PaymentService {
     private final TxRunner tx;
     private final PaymentRepository payments;
     private final PaymentStore store;
+    private final PaymentDbMapper dbMapper;
     private final SouClient souClient;
-    private final SouRequestFactory souFactory;
+    private final PaymentNetMapper netMapper;
     private final StornoService stornoService;
-    private final ResponseFactory responseFactory;
     private final Clock clock;
 
     /**
@@ -48,119 +52,111 @@ public class PaymentServiceImpl implements PaymentService {
      * leaves a durable CREATED row and the same request can be retried.
      */
     @Override
-    public OperationResponse pay(PaymentRequest request) {
+    public OperationResult pay(PaymentCommand command) {
         LocalDateTime now = LocalDateTime.now(clock);
-        PaymentEntity payment = createOrGet(request);
-        List<ReceiptEntity> receipts = store.receipts(payment.getId());
+        Payment payment = createOrGet(command);
+        Collection<Receipt> receipts = store.receipts(payment.getId());
 
-        if (isFinal(payment.getState())) {
-            return cancelledOrStored(request, payment, receipts, now);
+        if (payment.isFinal()) {
+            return cancelledOrStored(command, payment, receipts, now);
         }
 
-        Execution execution = tx.inTx(() -> execute(payment.getId(), request));
-        List<ReceiptEntity> resultReceipts = store.receipts(execution.payment().getId());
+        Execution execution = tx.inTx(() -> execute(payment.getId(), command));
+        Collection<Receipt> resultReceipts = store.receipts(execution.payment().getId());
 
-        if (execution.souResponse() == null) {
-            return cancelledOrStored(request, execution.payment(), resultReceipts, now);
+        if (execution.sou() == null) {
+            return cancelledOrStored(command, execution.payment(), resultReceipts, now);
         }
-        if (execution.souResponse().isSuccess()
-                && stornoService.executePendingAfterPayment(request.terminalId(), request.trxId(),
-                request.retailId(), request.timeZoneId())) {
-            log.info("Payment {} was cancelled by a delayed storno", request.trxId());
-            return responseFactory.error(ApplicationError.PAYMENT_CANCELLED,
-                    ApplicationError.PAYMENT_CANCELLED.getMessage(), now);
+        if (execution.sou().success()
+                && stornoService.executePendingAfterPayment(command.terminalId(), command.trxId(),
+                command.retailId(), command.timeZoneId())) {
+            log.info("Payment {} was cancelled by a delayed storno", command.trxId());
+            return OperationResult.error(ApplicationError.PAYMENT_CANCELLED, now);
         }
-        return responseFactory.of(execution.payment(), resultReceipts, execution.souResponse(), now);
+        return OperationResult.of(execution.payment(), resultReceipts, execution.sou(), now);
     }
 
-    private OperationResponse cancelledOrStored(PaymentRequest request, PaymentEntity payment,
-                                                List<ReceiptEntity> receipts, LocalDateTime now) {
+    private OperationResult cancelledOrStored(PaymentCommand command, Payment payment,
+                                              Collection<Receipt> receipts, LocalDateTime now) {
         // A duplicate request is also the recovery path for a delayed storno whose SOU
         // call failed earlier: the payment is already final, so nothing else would
         // retry it.
         if (payment.isSuccess()) {
-            stornoService.executePendingAfterPayment(request.terminalId(), request.trxId(),
-                    request.retailId(), request.timeZoneId());
+            stornoService.executePendingAfterPayment(command.terminalId(), command.trxId(),
+                    command.retailId(), command.timeZoneId());
         }
-        if (stornoService.isCompleted(request.terminalId(), request.trxId())) {
-            return responseFactory.error(ApplicationError.PAYMENT_CANCELLED,
-                    ApplicationError.PAYMENT_CANCELLED.getMessage(), now);
+        if (stornoService.isCompleted(command.terminalId(), command.trxId())) {
+            return OperationResult.error(ApplicationError.PAYMENT_CANCELLED, now);
         }
-        return responseFactory.stored(payment, receipts, now);
+        return OperationResult.stored(payment, receipts, now);
     }
 
-    private PaymentEntity createOrGet(PaymentRequest request) {
+    private Payment createOrGet(PaymentCommand command) {
         return tx.inTx(() -> {
-            payments.acquireTransactionLock(store.lockKey(request.terminalId(), request.trxId()));
+            payments.acquireTransactionLock(store.lockKey(command.terminalId(), command.trxId()));
             Optional<PaymentEntity> existing = payments.findByCashDeskUidAndTrnIdAndPaymentType(
-                    request.terminalId(), request.trxId(), PaymentType.SALE);
+                    command.terminalId(), command.trxId(), PaymentType.SALE);
             if (existing.isPresent()) {
-                store.assertSameTransaction(existing.get(), request.money());
-                return existing.get();
+                Payment payment = dbMapper.toDomain(existing.get());
+                store.assertSameTransaction(payment, command.money());
+                return payment;
             }
 
-            PaymentEntity payment = new PaymentEntity();
-            payment.setCashDeskUid(request.terminalId());
-            payment.setTrnId(request.trxId());
+            Payment payment = new Payment();
+            payment.setCashDeskUid(command.terminalId());
+            payment.setTrnId(command.trxId());
             payment.setPaymentDate(TimeZones.toUtc(
-                    TimeZones.nowInZone(clock, request.timeZoneId()), request.timeZoneId()));
-            payment.setAmount(request.money().amount());
-            payment.setDiscount(request.money().discount());
-            payment.setCurrency(request.money().currency());
-            payment.setCurrencyAbbr(request.money().currencyAbbr());
-            payment.setShiftNumber(request.shiftNo());
-            payment.setReceiptNumber(String.valueOf(request.receiptNumber()));
-            payment.setQrPayClientId(request.qrPayClientId());
-            payment.setPayToolId(request.payToolId());
-            payment.setSmartPaymentCardNumber(request.smartPaymentCardNumber());
-            payment.setTerminalIp(request.terminalIp());
+                    TimeZones.nowInZone(clock, command.timeZoneId()), command.timeZoneId()));
+            payment.applyMoney(command.money());
+            payment.setShiftNumber(command.shiftNo());
+            payment.setReceiptNumber(String.valueOf(command.receiptNumber()));
+            payment.setQrPayClientId(command.qrPayClientId());
+            payment.setPayToolId(command.payToolId());
+            payment.setSmartPaymentCardNumber(command.smartPaymentCardNumber());
+            payment.setTerminalIp(command.terminalIp());
             payment.setPaymentType(PaymentType.SALE);
             payment.setSuccess(false);
             payment.setState(PaymentState.CREATED);
 
-            payments.save(payment);
-            store.saveReceipts(payment.getId(), request.receipts(), request.money(), request.trxId());
-            return payment;
+            PaymentEntity saved = payments.save(dbMapper.toEntity(payment));
+            store.saveReceipts(saved.getId(), command.receipts(), command.money(), command.trxId());
+            return dbMapper.toDomain(saved);
         });
     }
 
-    private Execution execute(Long id, PaymentRequest request) {
+    private Execution execute(Long id, PaymentCommand command) {
         return tx.inTx(() -> {
-            PaymentEntity payment = payments.findByIdForUpdate(id).orElseThrow();
-            if (isFinal(payment.getState())) {
+            PaymentEntity entity = payments.findByIdForUpdate(id).orElseThrow();
+            Payment payment = dbMapper.toDomain(entity);
+            if (payment.isFinal()) {
                 return new Execution(payment, null);
             }
-            List<ReceiptEntity> receipts = store.receipts(id);
+            Collection<Receipt> receipts = store.receipts(id);
 
-            SouPaymentResponse response;
+            Sou sou;
             try {
-                response = souClient.payment(souFactory.paymentRequest(payment, request, receipts));
+                SouPaymentResponse response = souClient.payment(
+                        netMapper.toNet(payment, command, receipts, PaymentType.SALE));
+                sou = netMapper.toDomain(response);
             } catch (FeignException ex) {
                 throw new SouUnavailableException("SOU payment call failed for trx " + payment.getTrnId(), ex);
             }
 
-            if (response.isSuccess()) {
-                payment.setState(PaymentState.COMPLETED);
-                payment.setSuccess(true);
-                payment.setSouId(response.getSouTransaction() == null ? 0L : response.getSouTransaction());
-                LocalDateTime souTime = response.operationTimeAsLocalDateTime();
-                if (souTime != null) {
-                    payment.setPaymentDate(TimeZones.toUtc(souTime, request.timeZoneId()));
-                }
+            if (sou.success()) {
+                payment.complete(sou.souTransactionId(), paymentDate(sou, command));
             } else {
-                payment.setState(PaymentState.DECLINED);
-                payment.setSuccess(false);
-                payment.setErrorText(response.getErrorMessage());
+                payment.decline(sou.errorMessage());
             }
-            payments.save(payment);
-            return new Execution(payment, response);
+            payments.save(dbMapper.toEntity(payment));
+            return new Execution(payment, sou);
         });
     }
 
-    private boolean isFinal(PaymentState state) {
-        return state.isSettled();
+    private LocalDateTime paymentDate(Sou sou, PaymentCommand command) {
+        LocalDateTime souTime = sou.operationTime();
+        return souTime == null ? null : TimeZones.toUtc(souTime, command.timeZoneId());
     }
 
-    private record Execution(PaymentEntity payment, SouPaymentResponse souResponse) {
+    private record Execution(Payment payment, Sou sou) {
     }
 }

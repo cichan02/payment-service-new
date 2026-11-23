@@ -1,6 +1,6 @@
 package com.besmart.qrpay.paymentservicenew.api.rest.to.request;
 
-import com.besmart.qrpay.paymentservicenew.api.rest.to.common.MoneyDto;
+import com.besmart.qrpay.paymentservicenew.api.rest.to.common.Money;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -24,7 +24,7 @@ public record RefundRequest(
         @NotNull @PositiveOrZero Integer shiftNo,
         LocalDate shiftDate,
         Integer receiptNumber,
-        @NotNull @Valid MoneyDto money,
+        @NotNull @Valid Money money,
         @NotNull Long originalSouTransactionId,
         Long qrPayClientId,
         Long payToolId,

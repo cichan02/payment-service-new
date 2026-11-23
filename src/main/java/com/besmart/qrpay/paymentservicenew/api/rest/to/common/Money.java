@@ -1,6 +1,5 @@
 package com.besmart.qrpay.paymentservicenew.api.rest.to.common;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 
@@ -11,14 +10,13 @@ import java.math.BigDecimal;
  * currency abbreviation. Used as a nested object in requests and responses so the
  * four values cannot drift apart.
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public record MoneyDto(
+public record Money(
         @NotNull @DecimalMin("0.00") BigDecimal amount,
         @DecimalMin("0.00") BigDecimal discount,
         @NotNull Integer currency,
         String currencyAbbr
 ) {
-    public MoneyDto {
+    public Money {
         if (discount == null) {
             discount = BigDecimal.ZERO;
         }

@@ -1,11 +1,9 @@
 package com.besmart.qrpay.paymentservicenew.api.rest.to.response;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record OperationResponse(
         int errorCode,
         String errorMessage,
@@ -14,7 +12,7 @@ public record OperationResponse(
         Long operationId,
         String slip,
         List<String> receiptSlip,
-        PaymentDto payment,
-        List<ReceiptItemDto> receipts
+        PaymentResponse payment,
+        List<ReceiptItemResponse> receipts
 ) {
 }
