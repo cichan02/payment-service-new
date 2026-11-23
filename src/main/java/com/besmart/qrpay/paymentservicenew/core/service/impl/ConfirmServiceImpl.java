@@ -19,7 +19,7 @@ import com.besmart.qrpay.paymentservicenew.core.service.ConfirmService;
 import com.besmart.qrpay.paymentservicenew.core.service.TxRunner;
 import com.besmart.qrpay.paymentservicenew.infra.network.client.SouClient;
 import com.besmart.qrpay.paymentservicenew.infra.network.mapper.PaymentNetMapper;
-import com.besmart.qrpay.paymentservicenew.infra.network.to.InvoiceConfirmResponse;
+import com.besmart.qrpay.paymentservicenew.infra.network.to.response.InvoiceConfirmResponse;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.PaymentStore;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.mapper.PaymentDbMapper;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.repository.PaymentRepository;

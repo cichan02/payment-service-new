@@ -22,7 +22,7 @@ import com.besmart.qrpay.paymentservicenew.core.service.TxRunner;
 import com.besmart.qrpay.paymentservicenew.core.util.TimeZones;
 import com.besmart.qrpay.paymentservicenew.infra.network.client.SouClient;
 import com.besmart.qrpay.paymentservicenew.infra.network.mapper.PaymentNetMapper;
-import com.besmart.qrpay.paymentservicenew.infra.network.to.SouPaymentResponse;
+import com.besmart.qrpay.paymentservicenew.infra.network.to.response.SouPaymentResponse;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.PaymentStore;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.entity.PaymentEntity;
 import com.besmart.qrpay.paymentservicenew.infra.persistence.mapper.PaymentDbMapper;

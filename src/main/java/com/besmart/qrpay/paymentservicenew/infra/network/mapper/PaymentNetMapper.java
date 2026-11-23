@@ -8,13 +8,12 @@ import com.besmart.qrpay.paymentservicenew.core.domain.model.Receipt;
 import com.besmart.qrpay.paymentservicenew.core.domain.model.Sou;
 import com.besmart.qrpay.paymentservicenew.core.util.TimeZones;
 import com.besmart.qrpay.paymentservicenew.core.util.TrxUtils;
-import com.besmart.qrpay.paymentservicenew.infra.network.to.InvoiceConfirm;
-import com.besmart.qrpay.paymentservicenew.infra.network.to.InvoiceConfirmResponse;
-import com.besmart.qrpay.paymentservicenew.infra.network.to.SouAGoods;
-import com.besmart.qrpay.paymentservicenew.infra.network.to.SouGood;
-import com.besmart.qrpay.paymentservicenew.infra.network.to.SouPayment;
-import com.besmart.qrpay.paymentservicenew.infra.network.to.SouPaymentResponse;
-import com.besmart.qrpay.paymentservicenew.infra.network.to.SouTerminalData;
+import com.besmart.qrpay.paymentservicenew.infra.network.to.request.InvoiceConfirmRequest;
+import com.besmart.qrpay.paymentservicenew.infra.network.to.request.SouGoodRequest;
+import com.besmart.qrpay.paymentservicenew.infra.network.to.request.SouPaymentRequest;
+import com.besmart.qrpay.paymentservicenew.infra.network.to.request.SouTerminalDataRequest;
+import com.besmart.qrpay.paymentservicenew.infra.network.to.response.InvoiceConfirmResponse;
+import com.besmart.qrpay.paymentservicenew.infra.network.to.response.SouPaymentResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.ReportingPolicy;
@@ -42,69 +41,62 @@ public abstract class PaymentNetMapper {
     private static final short VALIDITY_SECONDS = 30;
     private static final int DEFAULT_CURRENCY = 933;
 
-    public SouPayment toNet(Payment payment, PaymentCommand command, Collection<Receipt> receipts,
-                            PaymentType paymentType) {
-        SouPayment souPayment = new SouPayment();
-        souPayment.setSouTerminalData(toNet(payment, command));
-        souPayment.setAmount(payment.getAmount());
-        souPayment.setProducts(goods(receipts, paymentType, payment.getTrnId(), payment));
-        souPayment.setCurrency(currency(payment));
-        souPayment.setValiditySecond(VALIDITY_SECONDS);
-        souPayment.setCashDeskApiTrxId(payment.getId());
-
-        if (paymentType == PaymentType.REFUND) {
-            souPayment.setSouId(null);
-            souPayment.setSouTransaction(command.originalSouTransactionId());
-            souPayment.setMobileQueue(null);
-            souPayment.setLoyaltyJson(null);
-        } else {
-            souPayment.setDiscount(zeroIfNull(payment.getDiscount()));
-            souPayment.setSouId(command.souId());
-            souPayment.setMobileQueue(command.mobileQueue());
-            souPayment.setSmartPaymentCardNumber(command.smartPaymentCardNumber());
-            souPayment.setLoyaltyJson(isBlank(command.loyaltyJson()) ? "[]" : command.loyaltyJson());
-            souPayment.setPayToolId(command.payToolId());
-            souPayment.setQrVersion(command.qrVersion());
-        }
-
-        return souPayment;
+    public SouPaymentRequest toNet(Payment payment, PaymentCommand command, Collection<Receipt> receipts,
+                                   PaymentType paymentType) {
+        boolean isRefund = paymentType == PaymentType.REFUND;
+        return new SouPaymentRequest(
+                toNet(payment, command),
+                payment.getAmount(),
+                isRefund ? null : zeroIfNull(payment.getDiscount()),
+                goods(receipts, paymentType, payment.getTrnId(), payment),
+                currency(payment),
+                isRefund ? null : command.souId(),
+                VALIDITY_SECONDS,
+                isRefund ? null : command.mobileQueue(),
+                isRefund ? null : command.smartPaymentCardNumber(),
+                isRefund ? null : (isBlank(command.loyaltyJson()) ? "[]" : command.loyaltyJson()),
+                isRefund ? command.originalSouTransactionId() : null,
+                isRefund ? null : command.payToolId(),
+                payment.getId(),
+                isRefund ? null : command.qrVersion()
+        );
     }
 
-    public SouTerminalData toNet(Payment payment, PaymentCommand command) {
+    public SouTerminalDataRequest toNet(Payment payment, PaymentCommand command) {
         LocalDateTime operationLocal = TimeZones.fromUtc(payment.getPaymentDate(), command.timeZoneId());
         LocalDate effectiveShiftDate = command.shiftDate() != null
                 ? command.shiftDate()
                 : operationLocal.toLocalDate();
 
-        SouTerminalData terminalData = new SouTerminalData();
-        terminalData.setTerminalId(payment.getCashDeskUid());
-        terminalData.setTrxId(TrxUtils.clearTrx(payment.getTrnId()));
-        terminalData.setTerminalDate(TimeZones.format(operationLocal));
-        terminalData.setShiftNum(payment.getShiftNumber());
-        terminalData.setShiftDate(TimeZones.format(effectiveShiftDate.atStartOfDay()));
-        terminalData.setCashierId(command.operatorId());
-        terminalData.setCashierFIO(null);
-        terminalData.setDeviceNo(command.deviceNo());
-        return terminalData;
+        return new SouTerminalDataRequest(
+                payment.getCashDeskUid(),
+                TrxUtils.clearTrx(payment.getTrnId()),
+                TimeZones.format(operationLocal),
+                payment.getShiftNumber(),
+                TimeZones.format(effectiveShiftDate.atStartOfDay()),
+                command.operatorId(),
+                null,
+                command.deviceNo()
+        );
     }
 
-    public InvoiceConfirm toNet(ConfirmCommand command) {
-        InvoiceConfirm confirm = new InvoiceConfirm();
-        confirm.setAppId(command.appId());
-        confirm.setInvoiceId(command.invoiceId());
-        confirm.setSouId(command.souId());
-        confirm.setPaymentToolId(command.payToolId());
-        confirm.setSuccess(command.success());
-        return confirm;
+    public InvoiceConfirmRequest toNet(ConfirmCommand command) {
+        return new InvoiceConfirmRequest(
+                command.appId(),
+                command.invoiceId(),
+                command.souId(),
+                command.payToolId(),
+                command.success()
+        );
     }
 
     public Sou toDomain(SouPaymentResponse response) {
         return new Sou(
                 response.isSuccess(),
-                response.getErrorCode(),
-                response.getErrorMessage(),
-                response.getSouTransaction(),
-                response.getSlip(),
+                response.errorCode(),
+                response.errorMessage(),
+                response.souTransaction(),
+                response.slip(),
                 response.operationTimeAsLocalDateTime()
         );
     }
@@ -112,44 +104,50 @@ public abstract class PaymentNetMapper {
     public Sou toDomain(InvoiceConfirmResponse response) {
         return new Sou(
                 response.isSuccess(),
-                response.getErrorCode() == null ? 0 : response.getErrorCode(),
-                response.getErrorMessage(),
+                response.errorCode() == null ? 0 : response.errorCode(),
+                response.errorMessage(),
                 null,
                 null,
-                TimeZones.parseSouOperationTime(response.getOperationTime())
+                TimeZones.parseSouOperationTime(response.operationTime())
         );
     }
 
-    private SouAGoods goods(Collection<Receipt> receipts, PaymentType type, String trnId, Payment payment) {
-        List<SouGood> goods = new ArrayList<>();
+    private List<SouGoodRequest> goods(Collection<Receipt> receipts, PaymentType type, String trnId, Payment payment) {
+        List<SouGoodRequest> goods = new ArrayList<>();
         if (receipts != null && !receipts.isEmpty()) {
             receipts.forEach(receipt -> goods.add(good(receipt)));
         } else {
             goods.add(defaultGood(type, trnId, payment));
         }
-        SouAGoods souAGoods = new SouAGoods();
-        souAGoods.setGoods(goods);
-        return souAGoods;
+        return goods;
     }
 
-    private SouGood good(Receipt receipt) {
-        SouGood good = new SouGood();
-        good.setProductName(receipt.name());
-        good.setBarcode(Optional.ofNullable(receipt.barCode()).orElse(""));
-        good.setQuantity(Optional.ofNullable(receipt.quantity()).orElse(BigDecimal.ONE));
-        good.setAmount(receipt.amount());
-        good.setDiscount(zeroIfNull(receipt.discount()));
-        return good;
+    private SouGoodRequest good(Receipt receipt) {
+        return new SouGoodRequest(
+                receipt.name(),
+                receipt.amount(),
+                null,
+                zeroIfNull(receipt.discount()),
+                null,
+                null,
+                null,
+                Optional.ofNullable(receipt.quantity()).orElse(BigDecimal.ONE),
+                Optional.ofNullable(receipt.barCode()).orElse("")
+        );
     }
 
-    private SouGood defaultGood(PaymentType type, String trnId, Payment payment) {
-        SouGood good = new SouGood();
-        good.setProductName((type == PaymentType.REFUND ? "Возврат N " : "Оплата N ") + TrxUtils.clearTrx(trnId));
-        good.setBarcode("");
-        good.setQuantity(BigDecimal.ONE);
-        good.setAmount(payment.getAmount());
-        good.setDiscount(zeroIfNull(payment.getDiscount()));
-        return good;
+    private SouGoodRequest defaultGood(PaymentType type, String trnId, Payment payment) {
+        return new SouGoodRequest(
+                (type == PaymentType.REFUND ? "Возврат N " : "Оплата N ") + TrxUtils.clearTrx(trnId),
+                payment.getAmount(),
+                null,
+                zeroIfNull(payment.getDiscount()),
+                null,
+                null,
+                null,
+                BigDecimal.ONE,
+                ""
+        );
     }
 
     private Short currency(Payment payment) {
