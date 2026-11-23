@@ -21,12 +21,25 @@ public class ResponseFactory {
     private final PaymentMapper paymentMapper;
 
     public OperationResponse error(ApplicationError error, String message, LocalDateTime operationTime) {
-        return new OperationResponse(error.getErrorCode(), message, operationTime,
-                null, null, null, null, null, null);
+        return new OperationResponse(
+        		error.getErrorCode(),
+          		message,
+            	operationTime,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
     }
 
-    public OperationResponse of(PaymentEntity payment, List<ReceiptEntity> receipts,
-                                SouPaymentResponse souResponse, LocalDateTime operationTime) {
+    public OperationResponse of(
+    	PaymentEntity payment,
+     	List<ReceiptEntity> receipts,
+     	SouPaymentResponse souResponse,
+      	LocalDateTime operationTime
+    ) {
         String slip = souResponse == null ? null : souResponse.getSlip();
         return new OperationResponse(
                 souResponse == null ? 0 : souResponse.getErrorCode(),
